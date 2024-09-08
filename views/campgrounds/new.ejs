@@ -1,25 +1,16 @@
-<!DOCTYPE html>
-<html>
+<% layout('layouts/boilerplate') %>
+<h1>新規作成</h1>
+<form action="/campgrounds" method="POST">
+  <div>
+    <label for="title">タイトル</label>
+    <input type="text" name="campground[title]" id="title">
+  </div>
+  <div>
+    <label for="location">場所</label>
+    <input type="text" name="campground[location]" id="location">
+  </div>
+  <button>登録</button>
+</form>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>新規作成</title>
-</head>
 
-<body>
-  <h1>新規作成</h1>
-  <form action="/campgrounds" method="POST">
-    <div>
-      <label for="title">タイトル</label>
-      <input type="text" name="campground[title]" id="title">
-    </div>
-    <div>
-      <label for="location">場所</label>
-      <input type="text" name="campground[location]" id="location">
-    </div>
-    <button>登録</button>
-  </form>
-</body>
-
-</html>
+<a href="/campgrounds">キャンセル</a>

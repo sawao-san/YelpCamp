@@ -1,8 +1,7 @@
 const path = require('path');
 const express = require('express');
-const app = express();
 const mongoose = require('mongoose');
-const port = 3000;
+const ejsMate = require('ejs-mate');
 const Campground = require('./models/campground');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -13,21 +12,43 @@ mongoose.connect('mongodb://localhost:27017/yelp-camp')
     })
     .catch((err) => {
         console.log('MongoDB コネクションエラー');
-    })
+    });
 
+const app = express();
+const port = 3000;
+
+app.engine('ejs', ejsMate);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(morgan('common'));
-app.use((req, res, next) => {
-    console.log('初めてのミドルウェア');
-    next();
-})
+
+//TODO　自作ミドルウェアテスト
+// app.use((req, res, next) => {
+//     req.requestTime = Date.now();
+//     console.log(req.method, req.path);
+//     return next()
+// })
+
+//パスワードミドルウェアのデモ
+// const verifyPassword = (req, res, next) => {
+//     const { password } = req.query;
+//     //passwordがsupersecretなら次の処理（ルートがあっていれば、ページを表示する）
+//     if (password === 'supersecret') {
+//         return next();
+//     }
+//     res.send('パスワードが必要です')
+// }
 
 app.get('/', (req, res) => {
     res.render('home');
 })
+
+//パスワードミドルウェアのデモ
+// app.get('/secret', verifyPassword, (req, res) => {
+//     res.send('ここは秘密のページです！！誰にも言わないで！')
+// })
 
 // 一覧表示
 app.get('/campgrounds', async (req, res) => {
@@ -39,6 +60,8 @@ app.get('/campgrounds', async (req, res) => {
 app.get('/campgrounds/new', (req, res) => {
     res.render('campgrounds/new');
 })
+
+
 
 // 詳細画面表示
 app.get('/campgrounds/:id', async (req, res) => {
@@ -73,6 +96,9 @@ app.delete('/campgrounds/:id', async (req, res) => {
     res.redirect(`/campgrounds`);
 })
 
+app.use((req, res) => {
+    res.status(404).send('ページが見つかりません');
+})
 
 app.listen(port, () => {
     console.log(`ポート:${port}でリクエスト待ち受け中`)
