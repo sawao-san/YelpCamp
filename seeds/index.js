@@ -25,6 +25,7 @@ const getImage = async () => {
     const res = await axios.get('https://api.unsplash.com/photos/random', config);
     const imageURL = res.data.urls.regular
     console.log(imageURL);
+    return imageURL;
 
 }
 
@@ -34,7 +35,8 @@ const seedDB = async () => {
     for (let i = 0; i < 20; i++) {
         const randomCityIndex = Math.floor(Math.random() * cities.length);
         const price = Math.floor(Math.random() * 2000) + 1000
-        const image = "https://unsplash.it/630/400";
+        // const image = "https://unsplash.it/630/400";
+        const image = await getImage();
         const camp = new Campground({
             location: `${cities[randomCityIndex].prefecture}${cities[randomCityIndex].city}`,
             title: `${sample(descriptors)}・${sample(places)}`,

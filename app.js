@@ -2,6 +2,10 @@ const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const ejsMate = require('ejs-mate');
+// const Joi = require('joi');
+const { campgroundShema } = require('./schemas')
+const catchAsync = require('./utils/catchAsync')
+const ExpressError = require('./utils/ExpressError')
 const Campground = require('./models/campground');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -41,6 +45,18 @@ app.use(morgan('common'));
 //     res.send('パスワードが必要です')
 // }
 
+//postとputリクエストだけに使いたいので、ミドルウェアを使いたい
+const validateCampground = (req, res, next) => {
+    const { error } = campgroundShema.validate(req.body);
+    if (error) {
+        const msg = error.details.map(detail => detail.message).join(',');
+        throw new ExpressError(msg, 400);
+    }
+    else {
+        next();
+    }
+}
+
 app.get('/', (req, res) => {
     res.render('home');
 })
@@ -51,10 +67,10 @@ app.get('/', (req, res) => {
 // })
 
 // 一覧表示
-app.get('/campgrounds', async (req, res) => {
+app.get('/campgrounds', catchAsync(async (req, res) => {
     const campgrounds = await Campground.find({});
     res.render('campgrounds/index', { campgrounds });
-})
+}))
 
 // 新規作成画面表示
 app.get('/campgrounds/new', (req, res) => {
@@ -64,40 +80,54 @@ app.get('/campgrounds/new', (req, res) => {
 
 
 // 詳細画面表示
-app.get('/campgrounds/:id', async (req, res) => {
+app.get('/campgrounds/:id', catchAsync(async (req, res) => {
     const campground = await Campground.findById(req.params.id);
     res.render('campgrounds/show', { campground });
-})
+}))
 
 //　新規登録時
-app.post('/campgrounds', async (req, res) => {
+app.post('/campgrounds', validateCampground, catchAsync(async (req, res) => {
+    // if (!req.body.campground) throw new ExpressError("不正なキャンプ場のデータです", 400);
+
     const campground = new Campground(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
-})
+}))
 
 //編集画面表示
-app.get('/campgrounds/:id/edit', async (req, res) => {
+app.get('/campgrounds/:id/edit', catchAsync(async (req, res) => {
     const campground = await Campground.findById(req.params.id);
     res.render('campgrounds/edit', { campground });
-})
+}))
 
 // 編集時
-app.put('/campgrounds/:id', async (req, res) => {
+app.put('/campgrounds/:id', validateCampground, catchAsync(async (req, res) => {
     const { id } = req.params;
+    console.log(req.body.campground);
     await Campground.findByIdAndUpdate(id, { ...req.body.campground });
     res.redirect(`/campgrounds/${id}`);
-})
+}))
 
 //削除時
-app.delete('/campgrounds/:id', async (req, res) => {
+app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect(`/campgrounds`);
+}))
+
+//エラーの切り分け①
+app.all('*', (req, res, next) => {
+    next(new ExpressError("ページが見つかりませんでした", 404))
 })
 
-app.use((req, res) => {
-    res.status(404).send('ページが見つかりません');
+
+//エラー処理
+app.use((err, req, res, next) => {
+    const { statusCode = 500 } = err;
+    if (!err.message) {
+        err.message = "問題が発生しました"
+    }
+    res.status(statusCode).render('error', { err });
 })
 
 app.listen(port, () => {
